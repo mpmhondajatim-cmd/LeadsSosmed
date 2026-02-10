@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Form Penjualan Motor</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root { --honda-red: #E4002B; --honda-dark: #333333; }
+    body { background-color: #f4f4f4; padding: 20px; font-family: 'Segoe UI', sans-serif; }
+    .form-container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 650px; margin: auto; border-top: 6px solid var(--honda-red); }
+    h3 { color: var(--honda-red); font-weight: 800; text-transform: uppercase; }
+    .btn-honda { background-color: var(--honda-red); color: white; font-weight: bold; border: none; }
+    .btn-honda:hover { background-color: #b30022; color: white; }
+    .asterisk { color: var(--honda-red); }
+    .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); display:none; justify-content:center; align-items:center; z-index:9999; }
+  </style>
+</head>
+<body>
+
+<div id="loading" class="loading-overlay"><div class="spinner-border text-danger"></div></div>
+
+<div class="text-center mb-3">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Honda_Logo.svg/1024px-Honda_Logo.svg.png" style="width: 60px;">
+</div>
+
+<div class="form-container">
+  <h3 class="text-center mb-4">Pemesanan Motor</h3>
+  <form id="leadForm">
+    <div class="mb-3">
+      <label>Nama Lengkap <span class="asterisk">*</span></label>
+      <input type="text" id="nama" name="nama" class="form-control" required oninput="validateForm()">
+    </div>
+    <div class="mb-3">
+      <label>Nomor WhatsApp <span class="asterisk">*</span></label>
+      <input type="tel" id="wa" name="wa" class="form-control" required oninput="validateForm()">
+    </div>
+    <div class="mb-3">
+      <label>Alamat Tinggal <span class="asterisk">*</span></label>
+      <textarea id="alamat" name="alamat" class="form-control" rows="2" required oninput="validateForm()"></textarea>
+    </div>
+
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <label>Provinsi <span class="asterisk">*</span></label>
+        <select id="provinsi" name="provinsi" class="form-select" required onchange="updateKota()">
+          <option value="">Pilih...</option>
+        </select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label>Kota <span class="asterisk">*</span></label>
+        <select id="kota" name="kota" class="form-select" disabled required onchange="updateKecamatanAndDealer()">
+          <option value="">Pilih...</option>
+        </select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label>Kecamatan <span class="asterisk">*</span></label>
+        <select id="kecamatan" name="kecamatan" class="form-select" disabled required onchange="validateForm()">
+          <option value="">Pilih...</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label>Tipe Motor <span class="asterisk">*</span></label>
+      <select id="motor" name="motor" class="form-select" required onchange="validateForm()">
+        <option value="">Memuat...</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label>Dealer (Opsional)</label>
+      <select id="dealer" name="dealer" class="form-select" disabled>
+        <option value="">Pilih kota...</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label>Sumber <span class="asterisk">*</span></label>
+      <select id="sumber" name="sumber" class="form-select" required onchange="validateForm()">
+        <option value="">Pilih...</option>
+        <option value="Instagram">Instagram</option>
+        <option value="Facebook">Facebook</option>
+        <option value="WhatsApp">WhatsApp</option>
+      </select>
+    </div>
+
+    <div class="form-check mb-4">
+      <input class="form-check-input" type="checkbox" id="agree" required onchange="validateForm()">
+      <label class="form-check-label" for="agree">Saya menyetujui kebijakan data <span class="asterisk">*</span></label>
+    </div>
+
+    <button type="submit" id="submitBtn" class="btn btn-honda w-100 py-2 fw-bold" disabled>KIRIM FORMULIR</button>
+  </form>
+</div>
+
+<script>
+  // GANTI INI DENGAN URL WEB APP ANDA
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymJDG7MEoWQyooWQqqPxEaVPenaCdHajb7KcD1XfixF6mczi569Fnw9C6B2zE2DURh/exec";
+
+  const loader = document.getElementById('loading');
+
+  window.onload = () => {
+    fetchData('getProvinces', {}, 'provinsi');
+    fetchData('getMotorOptions', {}, 'motor');
+  };
+
+  async function fetchData(action, params, elementId) {
+    const query = new URLSearchParams({ action, ...params }).toString();
+    try {
+      const response = await fetch(`${SCRIPT_URL}?${query}`);
+      const data = await response.json();
+      const select = document.getElementById(elementId);
+      select.innerHTML = '<option value="">Pilih...</option>';
+      data.forEach(item => select.add(new Option(item, item)));
+      if(elementId === 'motor') select.disabled = false;
+    } catch (e) { console.error(e); }
+  }
+
+  function updateKota() {
+    const prov = document.getElementById('provinsi').value;
+    document.getElementById('kota').disabled = !prov;
+    if(prov) fetchData('getCities', { prov }, 'kota');
+    validateForm();
+  }
+
+  function updateKecamatanAndDealer() {
+    const city = document.getElementById('kota').value;
+    document.getElementById('kecamatan').disabled = !city;
+    document.getElementById('dealer').disabled = !city;
+    if(city) {
+      fetchData('getDistricts', { city }, 'kecamatan');
+      fetchData('getDealers', { city }, 'dealer');
+    }
+    validateForm();
+  }
+
+  function validateForm() {
+    const fields = ['nama', 'wa', 'alamat', 'provinsi', 'kota', 'kecamatan', 'motor', 'sumber'];
+    const allFilled = fields.every(id => document.getElementById(id).value.trim() !== "");
+    const agreed = document.getElementById('agree').checked;
+    document.getElementById('submitBtn').disabled = !(allFilled && agreed);
+  }
+
+  document.getElementById('leadForm').onsubmit = async function(e) {
+    e.preventDefault();
+    loader.style.display = 'flex';
+    const formData = Object.fromEntries(new FormData(this));
+
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify(formData)
+      });
+      alert("Data berhasil dikirim!");
+      this.reset();
+      validateForm();
+    } catch (e) {
+      alert("Gagal mengirim data.");
+    } finally {
+      loader.style.display = 'none';
+    }
+  };
+</script>
+</body>
+</html>
