@@ -33,7 +33,7 @@
     </div>
     <div class="mb-3">
       <label>Nomor WhatsApp <span class="asterisk">*</span></label>
-      <input type="tel" id="wa" name="wa" class="form-control" required oninput="validateForm()">
+      <input type="tel" id="wa" name="wa" class="form-control" required oninput="cleanPhoneNumber(this); validateForm()">
     </div>
     <div class="mb-3">
       <label>Alamat Tinggal <span class="asterisk">*</span></label>
@@ -146,6 +146,11 @@
     document.getElementById('submitBtn').disabled = !(allFilled && agreed);
   }
 
+  function cleanPhoneNumber(input) {
+  // Menghapus semua karakter yang BUKAN angka (0-9) menggunakan regex
+  input.value = input.value.replace(/\D/g, '');
+  }
+  
   document.getElementById('leadForm').onsubmit = async function(e) {
     e.preventDefault();
     loader.style.display = 'flex';
@@ -170,6 +175,7 @@
 </body>
 
 </html>
+
 
 
 
